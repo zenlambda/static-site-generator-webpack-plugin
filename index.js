@@ -2,10 +2,13 @@ var evaluate = require('eval');
 var path = require('path');
 var Promise = require('bluebird');
 
-function StaticSiteGeneratorWebpackPlugin(renderSrc, outputPaths, locals) {
+function StaticSiteGeneratorWebpackPlugin(
+    renderSrc, outputPaths, locals, localFn, globalFn) {
   this.renderSrc = renderSrc;
   this.outputPaths = Array.isArray(outputPaths) ? outputPaths : [outputPaths];
   this.locals = locals;
+  this.localFn = localFn;
+  this.globalFn = globalFn;
 }
 
 StaticSiteGeneratorWebpackPlugin.prototype.apply = function(compiler) {
@@ -37,9 +40,16 @@ StaticSiteGeneratorWebpackPlugin.prototype.apply = function(compiler) {
           assets: assets
         };
 
-        for (var prop in self.locals) {
-          if (self.locals.hasOwnProperty(prop)) {
-            locals[prop] = self.locals[prop];
+        var localLocals = self.localFn(outputPath, self.locals)
+        for (var prop in localLocals) {
+          if (localLocals.hasOwnProperty(prop)) {
+            locals[prop] = localLocals[prop];
+          }
+        }
+        var generalLocals = self.globalFn(self.locals)
+        for (prop in generalLocals) {
+          if (generalLocals.hasOwnProperty(prop)) {
+            locals[prop] = generalLocals[prop];
           }
         }
 
